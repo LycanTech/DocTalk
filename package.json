@@ -1,0 +1,28 @@
+{
+  "name": "doctalk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DocTalk – Nigeria's offline-first medical records platform for doctors",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "db:migrate": "turbo run db:migrate --filter=@doctalk/api",
+    "db:studio": "turbo run db:studio --filter=@doctalk/api",
+    "clean": "turbo run clean && rimraf node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "rimraf": "^6.0.1",
+    "turbo": "^2.3.3",
+    "typescript": "^5.6.3"
+  },
+  "packageManager": "pnpm@9.14.4"
+}

@@ -1,0 +1,14 @@
+# Normalize all text files to LF on commit
+* text=auto eol=lf
+
+# Force LF for scripts and config that must not have CRLF
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# Binary files — no line-ending conversion
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.ico  binary
+*.pdf  binary

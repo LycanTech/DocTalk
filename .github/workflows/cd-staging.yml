@@ -1,0 +1,77 @@
+name: CD — Staging
+
+on:
+  push:
+    branches: [staging]
+
+jobs:
+  deploy-staging:
+    name: Deploy to STAGING
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.doctalk.ng
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for CI checks
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: "Tests"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push staging images
+        run: |
+          TAG="staging-${{ github.sha }}"
+          docker buildx build --push \
+            -t ghcr.io/${{ github.repository_owner }}/doctalk-api:$TAG \
+            -f apps/api/Dockerfile .
+          docker buildx build --push \
+            -t ghcr.io/${{ github.repository_owner }}/doctalk-web:$TAG \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.STAGING_API_URL }} \
+            -f apps/web/Dockerfile .
+          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Deploy to STAGING server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            cd /opt/doctalk
+            export DOCKER_REGISTRY=ghcr.io/${{ github.repository_owner }}
+            export IMAGE_TAG=staging-${{ github.sha }}
+            export POSTGRES_PASSWORD=${{ secrets.STAGING_POSTGRES_PASSWORD }}
+            export JWT_SECRET=${{ secrets.STAGING_JWT_SECRET }}
+            export JWT_REFRESH_SECRET=${{ secrets.STAGING_JWT_REFRESH_SECRET }}
+            export CORS_ORIGINS=${{ secrets.STAGING_CORS_ORIGINS }}
+            export NEXT_PUBLIC_API_URL=${{ secrets.STAGING_API_URL }}
+            export ACME_EMAIL=${{ secrets.ACME_EMAIL }}
+            docker compose -f infrastructure/docker/docker-compose.staging.yml pull
+            docker compose -f infrastructure/docker/docker-compose.staging.yml up -d
+            docker image prune -f
+
+      - name: Run integration smoke tests
+        run: |
+          sleep 20
+          curl -f https://staging.doctalk.ng/health || exit 1
+          curl -f https://api.staging.doctalk.ng/health || exit 1
+
+      - name: Tag for potential promotion to prod
+        run: |
+          git tag -f staging-approved-latest
+          git push origin staging-approved-latest --force

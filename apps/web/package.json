@@ -1,0 +1,43 @@
+{
+  "name": "@doctalk/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf .next out"
+  },
+  "dependencies": {
+    "@doctalk/shared": "workspace:*",
+    "@doctalk/ui": "workspace:*",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.460.0",
+    "next": "14.2.18",
+    "next-pwa": "^5.6.0",
+    "pouchdb": "^9.0.0",
+    "pouchdb-find": "^9.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.53.2",
+    "swr": "^2.2.5",
+    "tailwind-merge": "^2.5.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/pouchdb": "^6.4.2",
+    "@types/pouchdb-find": "^7.3.3",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  }
+}

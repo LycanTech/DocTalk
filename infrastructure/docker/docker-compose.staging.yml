@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-doctalk_staging}
+      POSTGRES_USER: ${POSTGRES_USER:-doctalk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-doctalk}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: ${DOCKER_REGISTRY}/doctalk-api:${IMAGE_TAG:-staging}
+    restart: always
+    environment:
+      NODE_ENV: staging
+      DATABASE_URL: postgresql://${POSTGRES_USER:-doctalk}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-doctalk_staging}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    depends_on:
+      postgres: { condition: service_healthy }
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api-staging.rule=Host(`api.staging.doctalk.ng`)"
+
+  web:
+    image: ${DOCKER_REGISTRY}/doctalk-web:${IMAGE_TAG:-staging}
+    restart: always
+    environment:
+      NODE_ENV: staging
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - api
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web-staging.rule=Host(`staging.doctalk.ng`)"
+
+  traefik:
+    image: traefik:v3.1
+    restart: always
+    command:
+      - --api.insecure=false
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+
+volumes:
+  postgres_staging_data:
+  letsencrypt:

@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode */
+    --bg-primary:       #FFFFFF;
+    --bg-secondary:     #F2F2F7;
+    --bg-tertiary:      #FFFFFF;
+    --label-primary:    #000000;
+    --label-secondary:  #6B6B80;
+    --separator:        #C6C6C8;
+    --blue:             #007AFF;
+    --green:            #34C759;
+    --red:              #FF3B30;
+    --orange:           #FF9500;
+    --mint:             #00C7BE;
+  }
+
+  .dark {
+    /* Dark mode — Apple True Black dark */
+    --bg-primary:       #000000;
+    --bg-secondary:     #1C1C1E;
+    --bg-tertiary:      #2C2C2E;
+    --label-primary:    #FFFFFF;
+    --label-secondary:  #ABABC0;
+    --separator:        #38383A;
+    --blue:             #0A84FF;
+    --green:            #30D158;
+    --red:              #FF453A;
+    --orange:           #FF9F0A;
+    --mint:             #63E6E2;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-[var(--bg-secondary)] text-[var(--label-primary)] font-sans;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  * {
+    @apply border-[var(--separator)];
+  }
+
+  /* iOS-style scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply rounded-full bg-[var(--separator)]; }
+}
+
+@layer components {
+  .card {
+    @apply bg-[var(--bg-primary)] rounded-apple-lg shadow-apple-sm border border-[var(--separator)] p-4;
+  }
+
+  .btn-primary {
+    @apply bg-[var(--blue)] hover:opacity-90 active:scale-95 text-white font-semibold
+           px-5 py-2.5 rounded-apple-md transition-all duration-150 text-[15px];
+  }
+
+  .btn-secondary {
+    @apply bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-[var(--label-primary)]
+           font-semibold px-5 py-2.5 rounded-apple-md transition-all duration-150 text-[15px]
+           border border-[var(--separator)];
+  }
+
+  .btn-danger {
+    @apply bg-[var(--red)] hover:opacity-90 active:scale-95 text-white font-semibold
+           px-5 py-2.5 rounded-apple-md transition-all duration-150 text-[15px];
+  }
+
+  .input {
+    @apply w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-apple-md
+           px-4 py-2.5 text-[var(--label-primary)] placeholder:text-[var(--label-secondary)]
+           focus:outline-none focus:ring-2 focus:ring-[var(--blue)] focus:border-transparent
+           transition-all duration-150 text-[15px];
+  }
+
+  .label {
+    @apply text-[13px] font-semibold text-[var(--label-secondary)] uppercase tracking-wide mb-1;
+  }
+
+  .list-group {
+    @apply bg-[var(--bg-primary)] rounded-apple-lg border border-[var(--separator)] divide-y divide-[var(--separator)] overflow-hidden;
+  }
+
+  .list-group-item {
+    @apply flex items-center px-4 py-3 hover:bg-[var(--bg-secondary)] transition-colors duration-100 cursor-pointer;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold;
+  }
+
+  .badge-blue  { @apply badge bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300; }
+  .badge-green { @apply badge bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300; }
+  .badge-red   { @apply badge bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300; }
+  .badge-orange{ @apply badge bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300; }
+}

@@ -1,0 +1,87 @@
+name: CD — Development
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  deploy-dev:
+    name: Deploy to DEV
+    runs-on: ubuntu-latest
+    environment:
+      name: development
+      url: https://dev.doctalk.ng
+    concurrency:
+      group: deploy-dev
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for CI to pass
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: "Tests"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push images
+        run: |
+          TAG="dev-${{ github.sha }}"
+          docker buildx build --push \
+            -t ghcr.io/${{ github.repository_owner }}/doctalk-api:$TAG \
+            -f apps/api/Dockerfile .
+          docker buildx build --push \
+            -t ghcr.io/${{ github.repository_owner }}/doctalk-web:$TAG \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.DEV_API_URL }} \
+            -f apps/web/Dockerfile .
+          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Deploy to DEV server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEV_HOST }}
+          username: ${{ secrets.DEV_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          script: |
+            cd /opt/doctalk
+            export DOCKER_REGISTRY=ghcr.io/${{ github.repository_owner }}
+            export IMAGE_TAG=dev-${{ github.sha }}
+            export POSTGRES_PASSWORD=${{ secrets.DEV_POSTGRES_PASSWORD }}
+            export JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
+            export JWT_REFRESH_SECRET=${{ secrets.DEV_JWT_REFRESH_SECRET }}
+            export CORS_ORIGINS=${{ secrets.DEV_CORS_ORIGINS }}
+            export NEXT_PUBLIC_API_URL=${{ secrets.DEV_API_URL }}
+            export ACME_EMAIL=${{ secrets.ACME_EMAIL }}
+            docker compose -f infrastructure/docker/docker-compose.staging.yml pull
+            docker compose -f infrastructure/docker/docker-compose.staging.yml up -d --no-deps
+            docker image prune -f
+
+      - name: Run smoke tests
+        run: |
+          sleep 15
+          curl -f https://dev.doctalk.ng/health || exit 1
+          curl -f https://api.dev.doctalk.ng/health || exit 1
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ DEV deployment failed. Check [Actions](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).'
+            })

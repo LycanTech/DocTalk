@@ -1,0 +1,247 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum MedicalSpecialty {
+  GENERAL_PRACTICE
+  INTERNAL_MEDICINE
+  CARDIOLOGY
+  NEUROLOGY
+  ORTHOPEDICS
+  PEDIATRICS
+  OBSTETRICS_GYNECOLOGY
+  SURGERY
+  OPHTHALMOLOGY
+  DERMATOLOGY
+  PSYCHIATRY
+  RADIOLOGY
+  PATHOLOGY
+  ONCOLOGY
+  EMERGENCY_MEDICINE
+  ANESTHESIOLOGY
+  NEPHROLOGY
+  GASTROENTEROLOGY
+  PULMONOLOGY
+  ENDOCRINOLOGY
+  HEMATOLOGY
+  INFECTIOUS_DISEASE
+  RHEUMATOLOGY
+  UROLOGY
+  ENT
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+  UNKNOWN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum Genotype {
+  AA
+  AS
+  SS
+  AC
+  SC
+}
+
+enum RecordStatus {
+  ACTIVE
+  RESOLVED
+  REFERRED
+  DECEASED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum UserRole {
+  DOCTOR
+  NURSE
+  ADMIN
+}
+
+enum NotificationType {
+  APPOINTMENT_REMINDER
+  SYNC_COMPLETE
+  PATIENT_UPDATED
+  DOCTOR_VERIFIED
+  SYSTEM
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model Doctor {
+  id                      String           @id @default(cuid())
+  email                   String           @unique
+  passwordHash            String
+  firstName               String
+  lastName                String
+  specialty               MedicalSpecialty
+  licenseNumber           String           @unique
+  phone                   String
+  hospital                String?
+  state                   String
+  role                    UserRole         @default(DOCTOR)
+  avatarUrl               String?
+  isVerified              Boolean          @default(false)
+  isActive                Boolean          @default(true)
+  // Email verification
+  emailVerificationToken  String?          @unique
+  emailVerificationExpiry DateTime?
+  emailVerifiedAt         DateTime?
+  // MDCN admin approval
+  mdcnApprovedAt          DateTime?
+  mdcnApprovedBy          String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  records                 MedicalRecord[]
+  appointments            Appointment[]
+  refreshTokens           RefreshToken[]
+  pushSubscriptions       PushSubscription[]
+
+  @@map("doctors")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  doctorId  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  doctor    Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Patient {
+  id                    String        @id @default(cuid())
+  firstName             String
+  lastName              String
+  dateOfBirth           DateTime
+  gender                Gender
+  bloodGroup            BloodGroup    @default(UNKNOWN)
+  genotype              Genotype?
+  phone                 String?
+  address               String?
+  state                 String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  nhisNumber            String?       @unique
+  allergies             String[]
+  chronicConditions     String[]
+  isActive              Boolean       @default(true)
+  couchdbRev            String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  records               MedicalRecord[]
+  appointments          Appointment[]
+
+  @@index([lastName, firstName])
+  @@map("patients")
+}
+
+model MedicalRecord {
+  id              String        @id @default(cuid())
+  patientId       String
+  doctorId        String
+  visitDate       DateTime
+  chiefComplaint  String
+  history         String
+  examination     String
+  diagnosis       String
+  treatment       String
+  prescription    Json          @default("[]")
+  labResults      Json          @default("[]")
+  vitalSigns      Json?
+  status          RecordStatus  @default(ACTIVE)
+  followUpDate    DateTime?
+  notes           String?
+  couchdbRev      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  patient         Patient       @relation(fields: [patientId], references: [id])
+  doctor          Doctor        @relation(fields: [doctorId], references: [id])
+  attachments     Attachment[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([visitDate])
+  @@map("medical_records")
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  recordId    String
+  name        String
+  mimeType    String
+  sizeBytes   Int
+  storageKey  String   @unique
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+
+  record      MedicalRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+
+  @@index([recordId])
+  @@map("attachments")
+}
+
+model Appointment {
+  id           String            @id @default(cuid())
+  patientId    String
+  doctorId     String
+  scheduledAt  DateTime
+  duration     Int               @default(30)
+  status       AppointmentStatus @default(SCHEDULED)
+  reason       String
+  notes        String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  patient      Patient           @relation(fields: [patientId], references: [id])
+  doctor       Doctor            @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId, scheduledAt])
+  @@index([patientId])
+  @@map("appointments")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  doctorId  String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  doctor    Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+}

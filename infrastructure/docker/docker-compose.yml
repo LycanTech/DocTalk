@@ -1,0 +1,85 @@
+version: "3.9"
+
+# Local development: full stack with PostgreSQL + CouchDB
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: doctalk_postgres_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: doctalk_dev
+      POSTGRES_USER: doctalk
+      POSTGRES_PASSWORD: doctalk
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U doctalk -d doctalk_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  couchdb:
+    image: couchdb:3.3
+    container_name: doctalk_couchdb_dev
+    restart: unless-stopped
+    environment:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: doctalk
+    ports:
+      - "5984:5984"
+    volumes:
+      - couchdb_dev_data:/opt/couchdb/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../../
+      dockerfile: apps/api/Dockerfile
+      target: builder
+    container_name: doctalk_api_dev
+    restart: unless-stopped
+    command: pnpm --filter @doctalk/api dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://doctalk:doctalk@postgres:5432/doctalk_dev
+      COUCHDB_URL: http://couchdb:5984
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: doctalk
+      JWT_SECRET: dev-jwt-secret-change-me
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-me
+      CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres: { condition: service_healthy }
+    volumes:
+      - ../../apps/api/src:/app/apps/api/src
+      - ../../packages:/app/packages
+
+  web:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile
+      target: builder
+    container_name: doctalk_web_dev
+    restart: unless-stopped
+    command: pnpm --filter @doctalk/web dev
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ../../apps/web/src:/app/apps/web/src
+
+volumes:
+  postgres_dev_data:
+  couchdb_dev_data:
