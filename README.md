@@ -126,7 +126,7 @@ pnpm --filter @doctalk/api run db:seed
 ```
 
 Seed creates a demo doctor account:
-`dr.adeyemi@doctalk.ng` / `DocTalk@2024!`
+`dr.Zingy@doctalk.ng` / `DocTalk@2024!`
 
 ### 5. Start all apps
 
