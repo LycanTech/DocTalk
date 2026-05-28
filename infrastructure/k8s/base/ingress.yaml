@@ -40,7 +40,7 @@ spec:
               service:
                 name: web
                 port:
-                  number: 3002
+                  number: 3000
     - host: api.doctalk.ng
       http:
         paths:
