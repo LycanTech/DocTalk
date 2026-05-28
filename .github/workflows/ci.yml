@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop, staging]
+    branches: [dev, staging, prod, main]
   pull_request:
-    branches: [main, develop, staging]
+    branches: [staging, prod, main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter @doctalk/api run db:generate
+
       - name: Type check
         run: pnpm type-check
 
@@ -59,6 +62,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @doctalk/api run db:generate
 
       - name: Build all packages
         run: pnpm build
@@ -112,6 +118,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @doctalk/api run db:generate
 
       - name: Run DB migrations
         run: pnpm --filter @doctalk/api run db:migrate:prod
