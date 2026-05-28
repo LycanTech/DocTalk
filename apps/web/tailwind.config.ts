@@ -8,53 +8,43 @@ const config: Config = {
   darkMode: "class",
   theme: {
     extend: {
-      // Apple HIG system font stack
       fontFamily: {
         sans: [
-          "-apple-system",
-          "BlinkMacSystemFont",
-          '"SF Pro Display"',
-          '"SF Pro Text"',
-          '"Segoe UI"',
-          "Roboto",
-          '"Helvetica Neue"',
-          "Arial",
-          "sans-serif",
+          "-apple-system", "BlinkMacSystemFont", '"Segoe UI"',
+          "Roboto", '"Helvetica Neue"', "Arial", "sans-serif",
         ],
-        mono: ['"SF Mono"', '"Fira Code"', '"Roboto Mono"', "monospace"],
+        serif: ["var(--font-serif)", "Georgia", '"Times New Roman"', "serif"],
+        mono:  ["var(--font-mono)", '"SF Mono"', '"Fira Code"', "monospace"],
       },
       colors: {
-        // DocTalk brand palette
-        primary:    { DEFAULT: "#007AFF", dark: "#0A84FF" },
-        secondary:  { DEFAULT: "#00C7BE", dark: "#63E6E2" },
-        success:    { DEFAULT: "#34C759", dark: "#30D158" },
-        danger:     { DEFAULT: "#FF3B30", dark: "#FF453A" },
-        warning:    { DEFAULT: "#FF9500", dark: "#FF9F0A" },
-        // Apple system backgrounds
-        "surface-primary":   { DEFAULT: "#FFFFFF",  dark: "#000000" },
-        "surface-secondary": { DEFAULT: "#F2F2F7",  dark: "#1C1C1E" },
-        "surface-tertiary":  { DEFAULT: "#FFFFFF",  dark: "#2C2C2E" },
-        "surface-grouped":   { DEFAULT: "#F2F2F7",  dark: "#000000" },
-        // Label colors
-        "label-primary":     { DEFAULT: "#000000",  dark: "#FFFFFF"  },
-        "label-secondary":   { DEFAULT: "#6B6B80",  dark: "#ABABC0"  },
-        "label-tertiary":    { DEFAULT: "#ADADBD",  dark: "#6B6B80"  },
-        // Separator
-        separator:           { DEFAULT: "#C6C6C8",  dark: "#38383A"  },
+        accent:  { DEFAULT: "#E85D4A", hover: "#D44E3B" },
+        gold:    { DEFAULT: "#C9A84C" },
+        "bg-editorial":  { DEFAULT: "#0C0C0C" },
+        "bg-card":       { DEFAULT: "#111111" },
+        "bg-surface":    { DEFAULT: "#1A1A1A" },
+        "text-editorial":{ DEFAULT: "#FFFFFF"  },
+        "text-muted":    { DEFAULT: "#888888"  },
+        // legacy aliases
+        primary:   { DEFAULT: "#E85D4A" },
+        secondary: { DEFAULT: "#C9A84C" },
+        success:   { DEFAULT: "#4ADE80" },
+        danger:    { DEFAULT: "#E85D4A" },
+        warning:   { DEFAULT: "#FBBF24" },
       },
       borderRadius: {
-        "apple-sm": "6px",
-        "apple-md": "10px",
-        "apple-lg": "14px",
-        "apple-xl": "20px",
+        "apple-sm": "4px",
+        "apple-md": "8px",
+        "apple-lg": "12px",
+        "apple-xl": "16px",
       },
       boxShadow: {
-        "apple-sm": "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)",
-        "apple-md": "0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)",
-        "apple-lg": "0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.05)",
+        "apple-sm": "0 1px 3px rgba(0,0,0,0.4)",
+        "apple-md": "0 4px 8px rgba(0,0,0,0.5)",
+        "apple-lg": "0 10px 24px rgba(0,0,0,0.6)",
+        "accent":   "0 4px 14px rgba(232,93,74,0.35)",
       },
       keyframes: {
-        "fade-in": { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "translateY(0)" } },
+        "fade-in":  { from: { opacity: "0", transform: "translateY(6px)" }, to: { opacity: "1", transform: "translateY(0)" } },
         "slide-up": { from: { transform: "translateY(100%)" }, to: { transform: "translateY(0)" } },
       },
       animation: {

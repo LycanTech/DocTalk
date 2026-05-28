@@ -1,11 +1,13 @@
 import webpush from "web-push";
 import { logger } from "./logger";
 
-webpush.setVapidDetails(
-  `mailto:${process.env.VAPID_EMAIL ?? "admin@doctalk.ng"}`,
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    `mailto:${process.env.VAPID_EMAIL ?? "admin@doctalk.ng"}`,
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+}
 
 export interface PushPayload {
   title: string;
