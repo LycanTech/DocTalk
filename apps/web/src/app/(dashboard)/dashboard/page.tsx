@@ -2,21 +2,29 @@ import type { Metadata } from "next";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { RecentPatients } from "@/components/dashboard/RecentPatients";
 import { TodayAppointments } from "@/components/dashboard/TodayAppointments";
+import { PiiShowcase } from "@/components/dashboard/PiiShowcase";
+import { ArchOverview } from "@/components/dashboard/ArchOverview";
 import { SyncStatus } from "@/components/offline/SyncStatus";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-fade-in">
+      {/* Editorial header */}
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-[28px] font-bold text-[var(--label-primary)]">Dashboard</h1>
-          <p className="text-[15px] text-[var(--label-secondary)] mt-0.5">
+          <p className="section-label mb-3">Overview // Today</p>
+          <h1 className="font-serif text-[36px] md:text-[44px] font-bold text-[var(--text-primary)] leading-tight">
+            Patient <span className="text-[var(--accent)] italic">Records.</span>
+          </h1>
+          <p className="font-mono text-[12px] text-[var(--text-muted)] mt-2 uppercase tracking-wider">
             Good morning, Doctor
           </p>
         </div>
-        <SyncStatus />
+        <div className="mt-2">
+          <SyncStatus />
+        </div>
       </div>
 
       <DashboardStats />
@@ -29,6 +37,12 @@ export default function DashboardPage() {
           <RecentPatients />
         </div>
       </div>
+
+      {/* Presentation: PII masking showcase */}
+      <PiiShowcase />
+
+      {/* Presentation: microservices architecture overview */}
+      <ArchOverview />
     </div>
   );
 }

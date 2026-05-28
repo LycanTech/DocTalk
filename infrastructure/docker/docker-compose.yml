@@ -1,15 +1,45 @@
 version: "3.9"
 
-# Local development: full stack with PostgreSQL + CouchDB
+# DocTalk — Microservices Development Stack
+#
+# Services:
+#   postgres          PostgreSQL 16 (shared DB, port 5432)
+#   couchdb           CouchDB 3.3 for offline sync (port 5984)
+#   api-gateway       Entry point for all clients (port 4000) — JWT + PII masking + audit
+#   service-auth      Authentication & token management (port 4011)
+#   service-patients  Patient CRUD — raw data, gateway masks PII for NURSE role (port 4012)
+#   service-records   Medical records CRUD (port 4013)
+#   service-appts     Appointment scheduling (port 4014)
+#   service-notif     Web push notifications (port 4015)
+#   web               Next.js PWA (port 3002)
+#
+# Start all:  docker compose up --build
+# Start infra only: docker compose up postgres couchdb
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  environment:
+    DATABASE_URL:          postgresql://doctalk:doctalk@postgres:5432/doctalk_dev
+    COUCHDB_URL:           http://couchdb:5984
+    JWT_SECRET:            dev-jwt-secret-change-me
+    JWT_REFRESH_SECRET:    dev-refresh-secret-change-me
+    VAPID_PUBLIC_KEY:      ${VAPID_PUBLIC_KEY:-}
+    VAPID_PRIVATE_KEY:     ${VAPID_PRIVATE_KEY:-}
+    VAPID_EMAIL:           admin@doctalk.ng
+    NODE_ENV:              development
+  depends_on:
+    postgres: { condition: service_healthy }
 
 services:
+  # ── Infrastructure ───────────────────────────────────────────────────────────
+
   postgres:
     image: postgres:16-alpine
     container_name: doctalk_postgres_dev
     restart: unless-stopped
     environment:
-      POSTGRES_DB: doctalk_dev
-      POSTGRES_USER: doctalk
+      POSTGRES_DB:       doctalk_dev
+      POSTGRES_USER:     doctalk
       POSTGRES_PASSWORD: doctalk
     ports:
       - "5432:5432"
@@ -26,7 +56,7 @@ services:
     container_name: doctalk_couchdb_dev
     restart: unless-stopped
     environment:
-      COUCHDB_USER: admin
+      COUCHDB_USER:     admin
       COUCHDB_PASSWORD: doctalk
     ports:
       - "5984:5984"
@@ -38,30 +68,140 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Microservices ─────────────────────────────────────────────────────────────
+
+  service-auth:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: apps/services/auth/Dockerfile
+    container_name: doctalk_service_auth
+    environment:
+      <<: *service-defaults
+      AUTH_PORT: 4011
+    ports:
+      - "4011:4011"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4011/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  service-patients:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: apps/services/patients/Dockerfile
+    container_name: doctalk_service_patients
+    environment:
+      <<: *service-defaults
+      PATIENTS_PORT: 4012
+    ports:
+      - "4012:4012"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4012/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  service-records:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: apps/services/records/Dockerfile
+    container_name: doctalk_service_records
+    environment:
+      <<: *service-defaults
+      RECORDS_PORT: 4013
+    ports:
+      - "4013:4013"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4013/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  service-appointments:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: apps/services/appointments/Dockerfile
+    container_name: doctalk_service_appointments
+    environment:
+      <<: *service-defaults
+      APPOINTMENTS_PORT: 4014
+    ports:
+      - "4014:4014"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4014/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  service-notifications:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: apps/services/notifications/Dockerfile
+    container_name: doctalk_service_notifications
+    environment:
+      <<: *service-defaults
+      NOTIFICATIONS_PORT: 4015
+    ports:
+      - "4015:4015"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4015/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ── API Gateway ───────────────────────────────────────────────────────────────
+
+  api-gateway:
+    <<: *service-defaults
+    build:
+      context: ../../
+      dockerfile: apps/gateway/Dockerfile
+    container_name: doctalk_gateway
+    environment:
+      <<: *service-defaults
+      GATEWAY_PORT:              4000
+      CORS_ORIGINS:              http://localhost:3002
+      AUTH_SERVICE_URL:          http://service-auth:4011
+      PATIENTS_SERVICE_URL:      http://service-patients:4012
+      RECORDS_SERVICE_URL:       http://service-records:4013
+      APPOINTMENTS_SERVICE_URL:  http://service-appointments:4014
+      NOTIFICATIONS_SERVICE_URL: http://service-notifications:4015
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:             { condition: service_healthy }
+      service-auth:         { condition: service_healthy }
+      service-patients:     { condition: service_healthy }
+      service-records:      { condition: service_healthy }
+      service-appointments: { condition: service_healthy }
+      service-notifications:{ condition: service_healthy }
+
+  # ── Monolith API (legacy / alternative to gateway) ────────────────────────────
+
   api:
+    <<: *service-defaults
     build:
       context: ../../
       dockerfile: apps/api/Dockerfile
       target: builder
     container_name: doctalk_api_dev
-    restart: unless-stopped
     command: pnpm --filter @doctalk/api dev
     environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://doctalk:doctalk@postgres:5432/doctalk_dev
-      COUCHDB_URL: http://couchdb:5984
-      COUCHDB_USER: admin
-      COUCHDB_PASSWORD: doctalk
-      JWT_SECRET: dev-jwt-secret-change-me
-      JWT_REFRESH_SECRET: dev-refresh-secret-change-me
-      CORS_ORIGINS: http://localhost:3000
+      <<: *service-defaults
+      PORT:         4001
+      API_URL:      http://localhost:4001
+      APP_URL:      http://localhost:3002
+      CORS_ORIGINS: http://localhost:3002,http://localhost:19006
     ports:
-      - "4000:4000"
-    depends_on:
-      postgres: { condition: service_healthy }
-    volumes:
-      - ../../apps/api/src:/app/apps/api/src
-      - ../../packages:/app/packages
+      - "4001:4001"
+
+  # ── Frontend ──────────────────────────────────────────────────────────────────
 
   web:
     build:
@@ -72,13 +212,11 @@ services:
     restart: unless-stopped
     command: pnpm --filter @doctalk/web dev
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4001
     ports:
-      - "3000:3000"
+      - "3002:3002"
     depends_on:
       - api
-    volumes:
-      - ../../apps/web/src:/app/apps/web/src
 
 volumes:
   postgres_dev_data:

@@ -6,10 +6,10 @@ import { fetcher } from "@/lib/api";
 interface Stats { totalPatients: number; todayAppointments: number; pendingRecords: number; syncPending: number; }
 
 const STAT_CARDS = [
-  { key: "totalPatients" as const,      label: "Total Patients",       color: "var(--blue)",    icon: "👥" },
-  { key: "todayAppointments" as const,  label: "Today's Appointments", color: "var(--green)",   icon: "📅" },
-  { key: "pendingRecords" as const,     label: "Pending Records",      color: "var(--orange)",  icon: "📋" },
-  { key: "syncPending" as const,        label: "Offline Changes",      color: "var(--mint)",    icon: "🔄" },
+  { key: "totalPatients"     as const, label: "Total Patients",       sub: "Registered",      cls: "stat-label-gold"   },
+  { key: "todayAppointments" as const, label: "Today's Appointments", sub: "Scheduled",       cls: "stat-label-accent" },
+  { key: "pendingRecords"    as const, label: "Pending Records",      sub: "Awaiting review", cls: "stat-label-gold"   },
+  { key: "syncPending"       as const, label: "Offline Changes",      sub: "To sync",         cls: "stat-label-accent" },
 ];
 
 export function DashboardStats() {
@@ -18,19 +18,15 @@ export function DashboardStats() {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {STAT_CARDS.map(({ key, label, color, icon }) => (
-        <div key={key} className="card">
-          <div className="flex items-start justify-between mb-3">
-            <span className="text-2xl">{icon}</span>
-            <div
-              className="w-2 h-2 rounded-full mt-1"
-              style={{ backgroundColor: color }}
-            />
-          </div>
-          <p className="text-[28px] font-bold text-[var(--label-primary)]">
+      {STAT_CARDS.map(({ key, label, sub, cls }) => (
+        <div key={key} className="stat-card">
+          <p className={`font-mono text-[10px] uppercase tracking-[0.15em] mb-3 ${cls}`}>
+            {sub}
+          </p>
+          <p className="font-serif text-[36px] font-bold text-[var(--text-primary)] leading-none">
             {stats ? stats[key] : "—"}
           </p>
-          <p className="text-[13px] text-[var(--label-secondary)] mt-0.5">{label}</p>
+          <p className="font-mono text-[11px] text-[var(--text-muted)] mt-2 uppercase tracking-wider">{label}</p>
         </div>
       ))}
     </div>

@@ -39,6 +39,9 @@ Thumbs.db
 coverage
 .nyc_output
 
+# Uploads
+uploads/
+
 # Docker
 *.pid
 

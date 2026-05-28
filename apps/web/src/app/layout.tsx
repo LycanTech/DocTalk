@@ -1,7 +1,20 @@
 import type { Metadata, Viewport } from "next";
+import { Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: { default: "DocTalk", template: "%s | DocTalk" },
@@ -9,11 +22,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   keywords: ["medical records", "Nigeria", "doctors", "EMR", "health"],
   authors: [{ name: "DocTalk" }],
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "DocTalk",
-  },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "DocTalk" },
   formatDetection: { telephone: false },
   openGraph: {
     type: "website",
@@ -25,8 +34,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#007AFF" },
-    { media: "(prefers-color-scheme: dark)",  color: "#0A84FF" },
+    { media: "(prefers-color-scheme: light)", color: "#F5F3EF" },
+    { media: "(prefers-color-scheme: dark)",  color: "#0C0C0C" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -35,7 +44,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${playfair.variable} ${jetbrains.variable}`}>
       <head />
       <body>
         <ThemeProvider>

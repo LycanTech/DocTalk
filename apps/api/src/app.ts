@@ -14,6 +14,9 @@ import { syncRouter } from "./routes/sync";
 import { verificationRouter } from "./routes/verification";
 import { attachmentsRouter } from "./routes/attachments";
 import { notificationsRouter } from "./routes/notifications";
+import { statsRouter } from "./routes/stats";
+import { chatRouter } from "./routes/chat";
+import { inquiriesRouter } from "./routes/inquiries";
 import { errorHandler } from "./middleware/errorHandler";
 import { notFound } from "./middleware/notFound";
 
@@ -67,6 +70,9 @@ app.use("/api/v1/sync", syncRouter);
 app.use("/api/v1/verification", verificationRouter);
 app.use("/api/v1/attachments", attachmentsRouter);
 app.use("/api/v1/notifications", notificationsRouter);
+app.use("/api/v1/stats", statsRouter);
+app.use("/api/v1/chat", chatRouter);
+app.use("/api/v1/inquiries", inquiriesRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 

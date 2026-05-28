@@ -5,25 +5,27 @@ export const metadata: Metadata = { title: "Register" };
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-secondary)] px-4 py-12">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-apple-xl bg-[var(--blue)] mb-4 shadow-apple-lg">
-            <span className="text-2xl font-bold text-white">DT</span>
-          </div>
-          <h1 className="text-[28px] font-bold text-[var(--label-primary)]">Join DocTalk</h1>
-          <p className="text-[15px] text-[var(--label-secondary)] mt-1">
-            Create your doctor account
+    <div className="min-h-screen flex items-center justify-center bg-[#0C0C0C] px-4 py-12">
+      <div className="bg-grid absolute inset-0 opacity-[0.03]" />
+
+      <div className="relative w-full max-w-lg">
+        <div className="mb-10">
+          <p className="section-label mb-4">Create Account // DocTalk</p>
+          <h1 className="font-serif text-[40px] font-bold text-white leading-tight">
+            Join <span className="text-[var(--accent)] italic">DocTalk.</span>
+          </h1>
+          <p className="font-mono text-[12px] text-[#555] mt-3 uppercase tracking-wider">
+            Verified Nigerian doctors only
           </p>
         </div>
 
-        <div className="card">
+        <div className="glass-card bg-[#111] border border-[#1E1E1E] rounded-apple-lg p-6">
           <RegisterForm />
         </div>
 
-        <p className="text-center text-[13px] text-[var(--label-secondary)] mt-6">
+        <p className="font-mono text-[11px] text-[#444] mt-6 uppercase tracking-wider text-center">
           Already registered?{" "}
-          <a href="/login" className="text-[var(--blue)] font-semibold">
+          <a href="/login" className="text-[var(--accent)] hover:text-white transition-colors">
             Sign in
           </a>
         </p>

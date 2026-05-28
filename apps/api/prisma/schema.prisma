@@ -122,6 +122,8 @@ model Doctor {
   appointments            Appointment[]
   refreshTokens           RefreshToken[]
   pushSubscriptions       PushSubscription[]
+  chatMessages            ChatMessage[]
+  patientInquiries        PatientInquiry[]
 
   @@map("doctors")
 }
@@ -244,4 +246,57 @@ model PushSubscription {
   doctor    Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   @@map("push_subscriptions")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actorEmail String
+  actorRole  String
+  action     String
+  resource   String
+  resourceId String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  doctorId  String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  doctor    Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([doctorId])
+  @@map("chat_messages")
+}
+
+model PatientInquiry {
+  id          String    @id @default(cuid())
+  doctorId    String
+  patientName String
+  phone       String?
+  email       String?
+  message     String
+  isRead      Boolean   @default(false)
+  reply       String?
+  repliedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  doctor      Doctor    @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId])
+  @@map("patient_inquiries")
 }

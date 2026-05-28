@@ -4,33 +4,58 @@
 
 @layer base {
   :root {
-    /* Light mode */
-    --bg-primary:       #FFFFFF;
-    --bg-secondary:     #F2F2F7;
-    --bg-tertiary:      #FFFFFF;
-    --label-primary:    #000000;
-    --label-secondary:  #6B6B80;
-    --separator:        #C6C6C8;
-    --blue:             #007AFF;
-    --green:            #34C759;
-    --red:              #FF3B30;
-    --orange:           #FF9500;
-    --mint:             #00C7BE;
+    /* ── Light editorial ───────────────────────────── */
+    --bg-base:         #F5F3EF;
+    --bg-card:         #FFFFFF;
+    --bg-hover:        #EEEBe4;
+    --bg-surface:      #E8E4DC;
+    --text-primary:    #0C0C0C;
+    --text-secondary:  #666666;
+    --text-muted:      #999999;
+    --accent:          #E85D4A;
+    --accent-hover:    #D44E3B;
+    --gold:            #C9A84C;
+    --separator:       #E0DDD5;
+    --border:          #D5D0C8;
+
+    /* kept for backward-compat with existing components */
+    --bg-primary:      var(--bg-card);
+    --bg-secondary:    var(--bg-base);
+    --bg-tertiary:     var(--bg-surface);
+    --label-primary:   var(--text-primary);
+    --label-secondary: var(--text-secondary);
+    --blue:            #2563EB;
+    --green:           #16A34A;
+    --red:             #E85D4A;
+    --orange:          #D97706;
+    --mint:            #0D9488;
   }
 
   .dark {
-    /* Dark mode — Apple True Black dark */
-    --bg-primary:       #000000;
-    --bg-secondary:     #1C1C1E;
-    --bg-tertiary:      #2C2C2E;
-    --label-primary:    #FFFFFF;
-    --label-secondary:  #ABABC0;
-    --separator:        #38383A;
-    --blue:             #0A84FF;
-    --green:            #30D158;
-    --red:              #FF453A;
-    --orange:           #FF9F0A;
-    --mint:             #63E6E2;
+    /* ── Dark editorial ───────────────────────────── */
+    --bg-base:         #0C0C0C;
+    --bg-card:         #111111;
+    --bg-hover:        #161616;
+    --bg-surface:      #1A1A1A;
+    --text-primary:    #FFFFFF;
+    --text-secondary:  #888888;
+    --text-muted:      #444444;
+    --accent:          #E85D4A;
+    --accent-hover:    #F06B58;
+    --gold:            #C9A84C;
+    --separator:       #1E1E1E;
+    --border:          #222222;
+
+    --bg-primary:      var(--bg-card);
+    --bg-secondary:    var(--bg-base);
+    --bg-tertiary:     var(--bg-surface);
+    --label-primary:   var(--text-primary);
+    --label-secondary: var(--text-secondary);
+    --blue:            #60A5FA;
+    --green:           #4ADE80;
+    --red:             #E85D4A;
+    --orange:          #FBBF24;
+    --mint:            #2DD4BF;
   }
 
   html {
@@ -40,66 +65,131 @@
   }
 
   body {
-    @apply bg-[var(--bg-secondary)] text-[var(--label-primary)] font-sans;
+    @apply bg-[var(--bg-base)] text-[var(--text-primary)] font-sans;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  * {
-    @apply border-[var(--separator)];
-  }
+  * { @apply border-[var(--border)]; }
 
-  /* iOS-style scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { @apply rounded-full bg-[var(--separator)]; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* Editorial heading — uses serif variable font */
+  h1, h2, h3 { @apply font-serif; }
 }
 
 @layer components {
+  /* ── Section label — "• PATIENTS // RECORDS" ── */
+  .section-label {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--gold)];
+  }
+  .section-label::before { content: "• "; }
+
+  /* ── Cards ─────────────────────────────────── */
   .card {
-    @apply bg-[var(--bg-primary)] rounded-apple-lg shadow-apple-sm border border-[var(--separator)] p-4;
+    @apply bg-[var(--bg-card)] border border-[var(--border)] rounded-apple-lg p-4;
   }
 
+  .card-accent {
+    @apply card border-l-2;
+    border-left-color: var(--gold);
+  }
+
+  .stat-card {
+    @apply card relative overflow-hidden;
+  }
+  .stat-card::after {
+    content: "";
+    @apply absolute bottom-0 left-0 right-0 h-[2px];
+    background: linear-gradient(90deg, var(--gold), var(--accent));
+  }
+
+  /* ── Buttons ────────────────────────────────── */
   .btn-primary {
-    @apply bg-[var(--blue)] hover:opacity-90 active:scale-95 text-white font-semibold
-           px-5 py-2.5 rounded-apple-md transition-all duration-150 text-[15px];
+    @apply bg-[var(--accent)] hover:bg-[var(--accent-hover)] active:scale-95 text-white
+           font-mono font-semibold uppercase tracking-wider
+           px-5 py-2.5 rounded-apple-md transition-all duration-150 text-[12px]
+           focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2;
   }
 
   .btn-secondary {
-    @apply bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] text-[var(--label-primary)]
-           font-semibold px-5 py-2.5 rounded-apple-md transition-all duration-150 text-[15px]
-           border border-[var(--separator)];
+    @apply bg-transparent hover:bg-[var(--bg-hover)] text-[var(--text-primary)]
+           font-mono font-medium uppercase tracking-wider
+           px-5 py-2.5 rounded-apple-md transition-all duration-150 text-[12px]
+           border border-[var(--border)]
+           focus:outline-none focus:ring-1 focus:ring-[var(--border)];
   }
 
   .btn-danger {
-    @apply bg-[var(--red)] hover:opacity-90 active:scale-95 text-white font-semibold
-           px-5 py-2.5 rounded-apple-md transition-all duration-150 text-[15px];
+    @apply bg-[var(--accent)] hover:opacity-90 active:scale-95 text-white
+           font-mono font-semibold uppercase tracking-wider
+           px-5 py-2.5 rounded-apple-md transition-all duration-150 text-[12px];
   }
 
+  /* ── Inputs ─────────────────────────────────── */
   .input {
-    @apply w-full bg-[var(--bg-secondary)] border border-[var(--separator)] rounded-apple-md
-           px-4 py-2.5 text-[var(--label-primary)] placeholder:text-[var(--label-secondary)]
-           focus:outline-none focus:ring-2 focus:ring-[var(--blue)] focus:border-transparent
-           transition-all duration-150 text-[15px];
+    @apply w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-apple-md
+           px-4 py-2.5 text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
+           focus:outline-none focus:ring-1 focus:ring-[var(--accent)] focus:border-[var(--accent)]
+           transition-all duration-150 text-[14px] font-sans;
   }
 
+  /* ── Labels ─────────────────────────────────── */
   .label {
-    @apply text-[13px] font-semibold text-[var(--label-secondary)] uppercase tracking-wide mb-1;
+    @apply font-mono text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-[0.12em] mb-1.5 block;
   }
 
+  /* ── List group ─────────────────────────────── */
   .list-group {
-    @apply bg-[var(--bg-primary)] rounded-apple-lg border border-[var(--separator)] divide-y divide-[var(--separator)] overflow-hidden;
+    @apply bg-[var(--bg-card)] border border-[var(--border)] rounded-apple-lg overflow-hidden divide-y;
+    divide-color: var(--border);
   }
 
   .list-group-item {
-    @apply flex items-center px-4 py-3 hover:bg-[var(--bg-secondary)] transition-colors duration-100 cursor-pointer;
+    @apply flex items-center px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors duration-100 cursor-pointer;
   }
 
+  /* ── Badges ─────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold;
+    @apply inline-flex items-center px-2 py-0.5 rounded font-mono text-[10px] font-semibold uppercase tracking-wider;
   }
 
-  .badge-blue  { @apply badge bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300; }
-  .badge-green { @apply badge bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300; }
-  .badge-red   { @apply badge bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300; }
-  .badge-orange{ @apply badge bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300; }
+  .badge-blue   { @apply badge bg-blue-500/10   text-blue-400;   }
+  .badge-green  { @apply badge bg-green-500/10  text-green-400;  }
+  .badge-red    { @apply badge bg-red-500/10    text-red-400;    }
+  .badge-orange { @apply badge bg-orange-500/10 text-orange-400; }
+
+  /* ── Glass card (auth pages) ────────────────── */
+  .glass-card .input {
+    @apply bg-white/10 border-white/20 text-white placeholder:text-white/40;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+  .glass-card .input:focus {
+    border-color: var(--accent);
+  }
+  .glass-card .label { @apply text-white/60; }
+
+  /* ── Gradient text ──────────────────────────── */
+  .text-accent { color: var(--accent); }
+  .text-gold   { color: var(--gold);   }
+
+  /* ── Stat card accent labels ───────────────── */
+  .stat-label-gold   { color: var(--gold);   }
+  .stat-label-accent { color: var(--accent); }
+
+  /* ── Grid texture overlay ──────────────────── */
+  .bg-grid {
+    background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* ── Sidebar ────────────────────────────────── */
+  .sidebar { background-color: #0A0A0A; border-right: 1px solid #1A1A1A; }
+
+  .sidebar-nav-active {
+    @apply text-white;
+    background-color: var(--accent);
+  }
 }

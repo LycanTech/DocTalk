@@ -29,34 +29,33 @@ export function TodayAppointments() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[17px] font-semibold text-[var(--label-primary)]">
+      <div className="flex items-center justify-between mb-4">
+        <p className="section-label">
           Today&apos;s Appointments
-          <span className="ml-2 badge badge-blue">{appointments.length}</span>
-        </h2>
+          <span className="ml-2 font-mono text-[10px] text-[var(--text-muted)]">({appointments.length})</span>
+        </p>
       </div>
 
       {appointments.length === 0 ? (
-        <div className="card text-center py-8">
-          <p className="text-[40px] mb-2">📅</p>
-          <p className="text-[17px] font-semibold text-[var(--label-primary)]">No appointments today</p>
-          <p className="text-[15px] text-[var(--label-secondary)] mt-1">Enjoy the free time, Doctor</p>
+        <div className="card text-center py-10">
+          <p className="font-serif text-[28px] font-bold text-[var(--text-primary)] mb-1">All clear.</p>
+          <p className="font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider">No appointments scheduled today</p>
         </div>
       ) : (
-        <div className="list-group">
+        <div className="card-accent space-y-0 divide-y divide-[var(--border)]">
           {appointments.map((a) => (
-            <div key={a.id} className="list-group-item">
-              <div className="w-10 text-center mr-3 flex-shrink-0">
-                <p className="text-[12px] font-semibold text-[var(--blue)]">
+            <div key={a.id} className="flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors">
+              <div className="text-right w-12 flex-shrink-0">
+                <p className="font-mono text-[11px] font-semibold text-[var(--gold)]">
                   {new Date(a.scheduledAt).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" })}
                 </p>
-                <p className="text-[11px] text-[var(--label-secondary)]">{a.duration}m</p>
+                <p className="font-mono text-[10px] text-[var(--text-muted)]">{a.duration}m</p>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-medium text-[var(--label-primary)]">
+                <p className="font-sans text-[14px] font-medium text-[var(--text-primary)]">
                   {a.patient.firstName} {a.patient.lastName}
                 </p>
-                <p className="text-[13px] text-[var(--label-secondary)] truncate">{a.reason}</p>
+                <p className="font-mono text-[11px] text-[var(--text-muted)] truncate uppercase tracking-wider">{a.reason}</p>
               </div>
               <span className={clsx("flex-shrink-0 ml-2", STATUS_STYLE[a.status] ?? "badge")}>
                 {a.status}

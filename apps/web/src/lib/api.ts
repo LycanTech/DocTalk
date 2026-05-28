@@ -20,6 +20,13 @@ export async function fetcher<T>(path: string): Promise<T> {
   return res.json();
 }
 
+export function getAuthHeader(): Record<string, string> {
+  const token = typeof window !== "undefined"
+    ? sessionStorage.getItem("doctalk-access-token")
+    : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const token = typeof window !== "undefined"
     ? sessionStorage.getItem("doctalk-access-token")
