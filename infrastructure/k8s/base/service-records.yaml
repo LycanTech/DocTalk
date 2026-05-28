@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-records
+  namespace: doctalk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-records
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: service-records
+    spec:
+      containers:
+        - name: service-records
+          image: doctalk-records:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4013
+          envFrom:
+            - configMapRef:
+                name: doctalk-config
+            - secretRef:
+                name: doctalk-secrets
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4013
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4013
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "384Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-records
+  namespace: doctalk
+spec:
+  selector:
+    app: service-records
+  ports:
+    - port: 4013
+      targetPort: 4013
+  type: ClusterIP

@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: doctalk
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - couchdb.yaml
+  - service-auth.yaml
+  - service-patients.yaml
+  - service-records.yaml
+  - service-appointments.yaml
+  - service-notifications.yaml
+  - api-gateway.yaml
+  - web.yaml
+  - ingress.yaml

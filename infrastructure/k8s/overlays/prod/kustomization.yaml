@@ -1,0 +1,57 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: doctalk
+
+resources:
+  - ../../base
+  - hpa.yaml
+
+# Image tags are set by CI/CD at deploy time via:
+#   kustomize edit set image doctalk-gateway=$ACR/doctalk-gateway:$TAG
+images:
+  - name: doctalk-gateway
+    newName: doctalkregistry.azurecr.io/doctalk-gateway
+    newTag: latest
+  - name: doctalk-auth
+    newName: doctalkregistry.azurecr.io/doctalk-auth
+    newTag: latest
+  - name: doctalk-patients
+    newName: doctalkregistry.azurecr.io/doctalk-patients
+    newTag: latest
+  - name: doctalk-records
+    newName: doctalkregistry.azurecr.io/doctalk-records
+    newTag: latest
+  - name: doctalk-appointments
+    newName: doctalkregistry.azurecr.io/doctalk-appointments
+    newTag: latest
+  - name: doctalk-notifications
+    newName: doctalkregistry.azurecr.io/doctalk-notifications
+    newTag: latest
+  - name: doctalk-web
+    newName: doctalkregistry.azurecr.io/doctalk-web
+    newTag: latest
+
+patches:
+  # Scale to 2 replicas in production
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: api-gateway
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: web
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: service-auth

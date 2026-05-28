@@ -135,7 +135,7 @@ jobs:
           name: coverage
           path: "**/coverage"
 
-  # ─── Docker Build & Push ──────────────────────────────────────────────────────
+  # ─── Docker Build & Push to ACR ──────────────────────────────────────────────
   docker:
     name: Build & Push Docker images
     runs-on: ubuntu-latest
@@ -143,52 +143,95 @@ jobs:
     if: github.event_name == 'push'
     permissions:
       contents: read
-      packages: write
+      id-token: write
     outputs:
-      image-tag: ${{ steps.meta.outputs.version }}
+      image-tag: ${{ steps.tag.outputs.tag }}
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Compute image tag
+        id: tag
+        run: echo "tag=${{ github.ref_name }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Log in to Azure
+        uses: azure/login@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ghcr.io/${{ github.repository }}/doctalk-api
-            ghcr.io/${{ github.repository }}/doctalk-web
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
-            type=semver,pattern={{version}}
+      - name: Log in to ACR
+        run: az acr login --name ${{ secrets.ACR_NAME }}
 
-      - name: Build & push API image
+      - name: Build & push — gateway
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./apps/api/Dockerfile
+          file: ./apps/gateway/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/doctalk-api:${{ steps.meta.outputs.version }}
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-gateway:${{ steps.tag.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build & push Web image
+      - name: Build & push — auth service
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/services/auth/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-auth:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push — patients service
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/services/patients/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-patients:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push — records service
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/services/records/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-records:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push — appointments service
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/services/appointments/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-appointments:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push — notifications service
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/services/notifications/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-notifications:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push — web
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./apps/web/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/doctalk-web:${{ steps.meta.outputs.version }}
-          build-args: NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-web:${{ steps.tag.outputs.tag }}
+          build-args: NEXT_PUBLIC_API_URL=${{ secrets.DEV_API_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
