@@ -1,17 +1,19 @@
 import { PrismaClient } from "@prisma/client";
 import { logger } from "./logger";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-
-export const prisma =
-  globalForPrisma.prisma ??
+const makePrisma = () =>
   new PrismaClient({
     log: [
-      { emit: "event", level: "query" },
       { emit: "event", level: "error" },
       { emit: "event", level: "warn" },
     ],
   });
+
+type PrismaSingleton = ReturnType<typeof makePrisma>;
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaSingleton | undefined };
+
+export const prisma = globalForPrisma.prisma ?? makePrisma();
 
 prisma.$on("error", (e) => logger.error(e, "Prisma error"));
 prisma.$on("warn",  (e) => logger.warn(e,  "Prisma warning"));
