@@ -98,7 +98,7 @@ app.post("/records", async (req, res) => {
         followUpDate: body.followUpDate ? new Date(body.followUpDate) : undefined,
         prescription: body.prescription as Prisma.InputJsonValue,
         labResults:   body.labResults   as Prisma.InputJsonValue,
-      },
+      } as any,
     });
     res.status(201).json({ success: true, data: record });
   } catch (err) {
