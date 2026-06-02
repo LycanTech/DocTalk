@@ -94,7 +94,7 @@ async function audit(
         resourceId: resourceId ?? undefined,
         ipAddress:  req.ip,
         userAgent:  req.headers["user-agent"],
-        metadata:   meta ?? null,
+        metadata:   (meta ?? null) as any,
       },
     });
   } catch {
