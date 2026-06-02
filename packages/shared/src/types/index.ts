@@ -88,6 +88,7 @@ export interface Doctor {
   state: NigerianState;
   role: UserRole;
   avatarUrl?: string;
+  isVerified?: boolean;
   createdAt: string;
   updatedAt: string;
 }
