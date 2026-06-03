@@ -3,6 +3,8 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { VerificationBanner } from "@/components/verification/VerificationBanner";
 
+export const dynamic = "force-dynamic";
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
