@@ -25,6 +25,7 @@ RUN pnpm --filter @doctalk/api deploy --prod /deploy
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+RUN apk add --no-cache openssl
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 doctalk
 
 COPY --from=builder --chown=doctalk:nodejs /deploy/node_modules ./node_modules
