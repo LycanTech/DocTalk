@@ -16,8 +16,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
 RUN pnpm --filter @doctalk/shared build
-RUN pnpm --filter @doctalk/api build
 RUN pnpm --filter @doctalk/api run db:generate
+RUN pnpm --filter @doctalk/api build
 
 # ─── Stage 4: Production ──────────────────────────────────────────────────────
 FROM node:20-alpine AS runner
