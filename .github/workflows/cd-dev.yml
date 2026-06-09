@@ -1,13 +1,16 @@
 name: CD — Development
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [dev]
 
 jobs:
   deploy-dev:
     name: Deploy to DEV (AKS)
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: development
       url: https://dev.doctalk.ng
@@ -19,14 +22,6 @@ jobs:
       id-token: write
 
     steps:
-      - name: Wait for Docker images to be pushed
-        uses: lewagon/wait-on-check-action@v1.3.4
-        with:
-          ref: ${{ github.sha }}
-          check-name: "Build & Push Docker images"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 15
-
       - name: Log in to Azure
         uses: azure/login@v2
         with:
@@ -39,7 +34,7 @@ jobs:
 
       - name: Roll out new images
         run: |
-          TAG="dev-${{ github.sha }}"
+          TAG="dev-${{ github.event.workflow_run.head_sha }}"
           kubectl set image deployment/api api=doctalkacr.azurecr.io/doctalk-api:$TAG -n doctalk
           kubectl set image deployment/web web=doctalkacr.azurecr.io/doctalk-web:$TAG -n doctalk
 
@@ -50,4 +45,4 @@ jobs:
 
       - name: Post log out of Azure
         if: always()
-        run: az logout
+        run: az logout || true
