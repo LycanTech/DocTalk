@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy-dev:
-    name: Deploy to DEV
+    name: Deploy to DEV (AKS)
     runs-on: ubuntu-latest
     environment:
       name: development
@@ -14,74 +14,40 @@ jobs:
     concurrency:
       group: deploy-dev
       cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Wait for CI to pass
+      - name: Wait for Docker images to be pushed
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
           ref: ${{ github.sha }}
-          check-name: "Tests"
+          check-name: "Build & Push Docker images"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
+          wait-interval: 15
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Log in to Azure
+        uses: azure/login@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Build and push images
+      - name: Get AKS credentials
+        run: az aks get-credentials --resource-group doctalk-rg --name doctalk-aks --overwrite-existing
+
+      - name: Roll out new images
         run: |
           TAG="dev-${{ github.sha }}"
-          docker buildx build --push \
-            -t ghcr.io/${{ github.repository_owner }}/doctalk-api:$TAG \
-            -f apps/api/Dockerfile .
-          docker buildx build --push \
-            -t ghcr.io/${{ github.repository_owner }}/doctalk-web:$TAG \
-            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.DEV_API_URL }} \
-            -f apps/web/Dockerfile .
-          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+          kubectl set image deployment/api api=doctalkacr.azurecr.io/doctalk-api:$TAG -n doctalk
+          kubectl set image deployment/web web=doctalkacr.azurecr.io/doctalk-web:$TAG -n doctalk
 
-      - name: Deploy to DEV server
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.DEV_HOST }}
-          username: ${{ secrets.DEV_USER }}
-          key: ${{ secrets.DEV_SSH_KEY }}
-          script: |
-            cd /opt/doctalk
-            export DOCKER_REGISTRY=ghcr.io/${{ github.repository_owner }}
-            export IMAGE_TAG=dev-${{ github.sha }}
-            export POSTGRES_PASSWORD=${{ secrets.DEV_POSTGRES_PASSWORD }}
-            export JWT_SECRET=${{ secrets.DEV_JWT_SECRET }}
-            export JWT_REFRESH_SECRET=${{ secrets.DEV_JWT_REFRESH_SECRET }}
-            export CORS_ORIGINS=${{ secrets.DEV_CORS_ORIGINS }}
-            export NEXT_PUBLIC_API_URL=${{ secrets.DEV_API_URL }}
-            export ACME_EMAIL=${{ secrets.ACME_EMAIL }}
-            docker compose -f infrastructure/docker/docker-compose.staging.yml pull
-            docker compose -f infrastructure/docker/docker-compose.staging.yml up -d --no-deps
-            docker image prune -f
-
-      - name: Run smoke tests
+      - name: Wait for rollout
         run: |
-          sleep 15
-          curl -f https://dev.doctalk.ng/health || exit 1
-          curl -f https://api.dev.doctalk.ng/health || exit 1
+          kubectl rollout status deployment/api -n doctalk --timeout=5m
+          kubectl rollout status deployment/web -n doctalk --timeout=5m
 
-      - name: Notify on failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '❌ DEV deployment failed. Check [Actions](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).'
-            })
+      - name: Post log out of Azure
+        if: always()
+        run: az logout
