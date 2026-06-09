@@ -165,7 +165,7 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Log in to ACR
-        run: az acr login --name ${{ secrets.ACR_NAME }}
+        run: az acr login --name doctalkacr
 
       - name: Build & push — api
         uses: docker/build-push-action@v6
@@ -174,8 +174,8 @@ jobs:
           file: ./apps/api/Dockerfile
           push: true
           tags: |
-            ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-api:${{ steps.tag.outputs.tag }}
-            ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-api:latest
+            doctalkacr.azurecr.io/doctalk-api:${{ steps.tag.outputs.tag }}
+            doctalkacr.azurecr.io/doctalk-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -186,8 +186,8 @@ jobs:
           file: ./apps/web/Dockerfile
           push: true
           tags: |
-            ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-web:${{ steps.tag.outputs.tag }}
-            ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-web:latest
+            doctalkacr.azurecr.io/doctalk-web:${{ steps.tag.outputs.tag }}
+            doctalkacr.azurecr.io/doctalk-web:latest
           build-args: NEXT_PUBLIC_API_URL=${{ secrets.DEV_API_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
