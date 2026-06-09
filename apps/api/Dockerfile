@@ -35,4 +35,4 @@ USER doctalk
 EXPOSE 4000
 ENV NODE_ENV=production
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/index.js"]
