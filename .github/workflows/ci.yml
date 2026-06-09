@@ -160,68 +160,22 @@ jobs:
       - name: Log in to Azure
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Log in to ACR
         run: az acr login --name ${{ secrets.ACR_NAME }}
 
-      - name: Build & push — gateway
+      - name: Build & push — api
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./apps/gateway/Dockerfile
+          file: ./apps/api/Dockerfile
           push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-gateway:${{ steps.tag.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build & push — auth service
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./apps/services/auth/Dockerfile
-          push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-auth:${{ steps.tag.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build & push — patients service
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./apps/services/patients/Dockerfile
-          push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-patients:${{ steps.tag.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build & push — records service
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./apps/services/records/Dockerfile
-          push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-records:${{ steps.tag.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build & push — appointments service
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./apps/services/appointments/Dockerfile
-          push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-appointments:${{ steps.tag.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build & push — notifications service
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./apps/services/notifications/Dockerfile
-          push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-notifications:${{ steps.tag.outputs.tag }}
+          tags: |
+            ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-api:${{ steps.tag.outputs.tag }}
+            ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -231,7 +185,13 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
-          tags: ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-web:${{ steps.tag.outputs.tag }}
+          tags: |
+            ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-web:${{ steps.tag.outputs.tag }}
+            ${{ secrets.ACR_LOGIN_SERVER }}/doctalk-web:latest
           build-args: NEXT_PUBLIC_API_URL=${{ secrets.DEV_API_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Post log out of Azure
+        if: always()
+        run: az logout
