@@ -2,7 +2,6 @@
 
 import { useAuth } from "@/components/providers/AuthProvider";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
-import { MedicalSpecialty } from "@doctalk/shared";
 
 export function ProfileSettings() {
   const { doctor, logout } = useAuth();

@@ -3,23 +3,23 @@ name: CD — Production
 on:
   push:
     tags:
-      - "v*.*.*"                # Semantic version tag triggers production deploy
-  workflow_dispatch:             # Manual trigger with approval gate
+      - "v*.*.*"
+  workflow_dispatch:
     inputs:
       image_tag:
-        description: "Docker image tag to deploy (e.g. staging-abc1234)"
+        description: "Image tag to deploy (e.g. staging-abc1234)"
         required: true
 
 jobs:
   deploy-prod:
-    name: Deploy to PRODUCTION
+    name: Deploy to PRODUCTION (AKS)
     runs-on: ubuntu-latest
     environment:
-      name: production             # GitHub env with required reviewers configured
+      name: production
       url: https://doctalk.ng
     concurrency:
       group: deploy-prod
-      cancel-in-progress: false   # Never cancel a prod deploy mid-flight
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
@@ -28,82 +28,108 @@ jobs:
         id: tag
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "IMAGE_TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+            echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           else
-            echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_ENV
+            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Log in to Azure
+        uses: azure/login@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Build and push production images
+      - name: Log in to ACR
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build & push all images (tag trigger only)
         if: github.event_name == 'push'
         run: |
+          TAG=${{ steps.tag.outputs.tag }}
+          ACR=${{ secrets.ACR_LOGIN_SERVER }}
+
+          for img in gateway auth patients records appointments notifications; do
+            dockerfile="apps/gateway/Dockerfile"
+            [[ "$img" != "gateway" ]] && dockerfile="apps/services/$img/Dockerfile"
+            docker buildx build --push \
+              -t $ACR/doctalk-$img:$TAG \
+              -t $ACR/doctalk-$img:latest \
+              -f $dockerfile .
+          done
+
           docker buildx build --push \
-            -t ghcr.io/${{ github.repository_owner }}/doctalk-api:${{ env.IMAGE_TAG }} \
-            -t ghcr.io/${{ github.repository_owner }}/doctalk-api:latest \
-            -f apps/api/Dockerfile .
-          docker buildx build --push \
-            -t ghcr.io/${{ github.repository_owner }}/doctalk-web:${{ env.IMAGE_TAG }} \
-            -t ghcr.io/${{ github.repository_owner }}/doctalk-web:latest \
+            -t $ACR/doctalk-web:$TAG \
+            -t $ACR/doctalk-web:latest \
             --build-arg NEXT_PUBLIC_API_URL=https://api.doctalk.ng \
             -f apps/web/Dockerfile .
 
-      - name: Deploy to PRODUCTION (blue-green)
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Get AKS credentials
+        uses: azure/aks-set-context@v4
         with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USER }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          script: |
-            cd /opt/doctalk
-            # Blue-green: pull new images before stopping old containers
-            export DOCKER_REGISTRY=ghcr.io/${{ github.repository_owner }}
-            export IMAGE_TAG=${{ env.IMAGE_TAG }}
-            export DATABASE_URL=${{ secrets.PROD_DATABASE_URL }}
-            export JWT_SECRET=${{ secrets.PROD_JWT_SECRET }}
-            export JWT_REFRESH_SECRET=${{ secrets.PROD_JWT_REFRESH_SECRET }}
-            export CORS_ORIGINS=https://doctalk.ng
-            export NEXT_PUBLIC_API_URL=https://api.doctalk.ng
-            export ACME_EMAIL=${{ secrets.ACME_EMAIL }}
-            docker compose -f infrastructure/docker/docker-compose.prod.yml pull
-            docker compose -f infrastructure/docker/docker-compose.prod.yml up -d --remove-orphans
-            # Wait for health checks
-            sleep 30
-            docker compose -f infrastructure/docker/docker-compose.prod.yml ps
-            docker image prune -f
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
 
-      - name: Production health check
+      - name: Set up kubectl + kustomize
+        uses: azure/setup-kubectl@v4
+
+      - name: Run DB migrations
+        run: |
+          kubectl run prisma-migrate \
+            --namespace=doctalk \
+            --image=${{ secrets.ACR_LOGIN_SERVER }}/doctalk-gateway:${{ steps.tag.outputs.tag }} \
+            --restart=Never \
+            --rm -i \
+            --env="DATABASE_URL=${{ secrets.PROD_DATABASE_URL }}" \
+            -- npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma || true
+
+      - name: Update image tags in overlay
+        working-directory: infrastructure/k8s/overlays/prod
+        run: |
+          TAG=${{ steps.tag.outputs.tag }}
+          ACR=${{ secrets.ACR_LOGIN_SERVER }}
+
+          kustomize edit set image \
+            doctalk-gateway=$ACR/doctalk-gateway:$TAG \
+            doctalk-auth=$ACR/doctalk-auth:$TAG \
+            doctalk-patients=$ACR/doctalk-patients:$TAG \
+            doctalk-records=$ACR/doctalk-records:$TAG \
+            doctalk-appointments=$ACR/doctalk-appointments:$TAG \
+            doctalk-notifications=$ACR/doctalk-notifications:$TAG \
+            doctalk-web=$ACR/doctalk-web:$TAG
+
+      - name: Apply prod K8s manifests
+        run: kubectl apply -k infrastructure/k8s/overlays/prod
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/api-gateway   -n doctalk --timeout=300s
+          kubectl rollout status deployment/web           -n doctalk --timeout=300s
+          kubectl rollout status deployment/service-auth  -n doctalk --timeout=180s
+
+      - name: Production health checks
         run: |
           sleep 15
           for i in {1..5}; do
-            if curl -f https://doctalk.ng/health && curl -f https://api.doctalk.ng/health; then
+            if curl -sf https://doctalk.ng/health && curl -sf https://api.doctalk.ng/health; then
               echo "Health checks passed"
               exit 0
             fi
-            echo "Attempt $i failed, retrying in 10s..."
+            echo "Attempt $i — retrying in 10s..."
             sleep 10
           done
-          echo "Health checks failed after 5 attempts"
+          echo "Health checks failed"
           exit 1
 
       - name: Rollback on failure
         if: failure()
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USER }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          script: |
-            cd /opt/doctalk
-            docker compose -f infrastructure/docker/docker-compose.prod.yml down
-            export IMAGE_TAG=latest
-            docker compose -f infrastructure/docker/docker-compose.prod.yml up -d
-            echo "Rolled back to :latest"
+        run: |
+          echo "Rolling back to previous deployment..."
+          kubectl rollout undo deployment/api-gateway   -n doctalk
+          kubectl rollout undo deployment/web           -n doctalk
+          kubectl rollout undo deployment/service-auth  -n doctalk
+          kubectl rollout undo deployment/service-patients -n doctalk
+          kubectl rollout undo deployment/service-records  -n doctalk
+          kubectl rollout undo deployment/service-appointments -n doctalk
+          kubectl rollout undo deployment/service-notifications -n doctalk
 
       - name: Create GitHub release
         if: github.event_name == 'push'
@@ -113,9 +139,9 @@ jobs:
             github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: '${{ env.IMAGE_TAG }}',
-              name: 'Release ${{ env.IMAGE_TAG }}',
-              body: 'Production deployment of DocTalk ${{ env.IMAGE_TAG }}',
+              tag_name: '${{ steps.tag.outputs.tag }}',
+              name: 'Release ${{ steps.tag.outputs.tag }}',
+              body: 'Production deployment of DocTalk ${{ steps.tag.outputs.tag }}',
               draft: false,
               prerelease: false
             })

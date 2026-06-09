@@ -56,6 +56,7 @@ export function ChatInterface() {
       const decoder = new TextDecoder();
       let buffer    = "";
 
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -105,7 +106,7 @@ export function ChatInterface() {
     }
   };
 
-  const useSuggestion = (s: string) => {
+  const handleSuggestion = (s: string) => {
     if (loading) return;
     send({ message: s });
   };
@@ -126,7 +127,7 @@ export function ChatInterface() {
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
-                  onClick={() => useSuggestion(s)}
+                  onClick={() => handleSuggestion(s)}
                   className="text-left px-4 py-2.5 rounded border border-[var(--border)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors font-mono text-[11px] text-[var(--text-muted)] uppercase tracking-wider"
                 >
                   {s}

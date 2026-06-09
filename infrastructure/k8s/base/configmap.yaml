@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: doctalk-config
+  namespace: doctalk
+data:
+  NODE_ENV: production
+  COUCHDB_URL: http://couchdb:5984
+  VAPID_EMAIL: admin@doctalk.ng
+  GATEWAY_PORT: "4000"
+  AUTH_PORT: "4011"
+  PATIENTS_PORT: "4012"
+  RECORDS_PORT: "4013"
+  APPOINTMENTS_PORT: "4014"
+  NOTIFICATIONS_PORT: "4015"
+  PORT: "3002"
+  CORS_ORIGINS: https://doctalk.ng
+  APP_URL: https://doctalk.ng
+  API_URL: https://api.doctalk.ng
+  AUTH_SERVICE_URL: http://service-auth:4011
+  PATIENTS_SERVICE_URL: http://service-patients:4012
+  RECORDS_SERVICE_URL: http://service-records:4013
+  APPOINTMENTS_SERVICE_URL: http://service-appointments:4014
+  NOTIFICATIONS_SERVICE_URL: http://service-notifications:4015

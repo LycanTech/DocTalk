@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy-staging:
-    name: Deploy to STAGING
+    name: Deploy to STAGING (AKS)
     runs-on: ubuntu-latest
     environment:
       name: staging
@@ -26,52 +26,94 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Log in to Azure
+        uses: azure/login@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Build and push staging images
+      - name: Log in to ACR
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Set image tag
+        id: tag
+        run: echo "tag=staging-${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Build & push all images to ACR
         run: |
-          TAG="staging-${{ github.sha }}"
+          TAG=${{ steps.tag.outputs.tag }}
+          ACR=${{ secrets.ACR_LOGIN_SERVER }}
+
           docker buildx build --push \
-            -t ghcr.io/${{ github.repository_owner }}/doctalk-api:$TAG \
-            -f apps/api/Dockerfile .
+            -t $ACR/doctalk-gateway:$TAG \
+            -f apps/gateway/Dockerfile .
           docker buildx build --push \
-            -t ghcr.io/${{ github.repository_owner }}/doctalk-web:$TAG \
+            -t $ACR/doctalk-auth:$TAG \
+            -f apps/services/auth/Dockerfile .
+          docker buildx build --push \
+            -t $ACR/doctalk-patients:$TAG \
+            -f apps/services/patients/Dockerfile .
+          docker buildx build --push \
+            -t $ACR/doctalk-records:$TAG \
+            -f apps/services/records/Dockerfile .
+          docker buildx build --push \
+            -t $ACR/doctalk-appointments:$TAG \
+            -f apps/services/appointments/Dockerfile .
+          docker buildx build --push \
+            -t $ACR/doctalk-notifications:$TAG \
+            -f apps/services/notifications/Dockerfile .
+          docker buildx build --push \
+            -t $ACR/doctalk-web:$TAG \
             --build-arg NEXT_PUBLIC_API_URL=${{ secrets.STAGING_API_URL }} \
             -f apps/web/Dockerfile .
-          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
 
-      - name: Deploy to STAGING server
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Get AKS credentials
+        uses: azure/aks-set-context@v4
         with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USER }}
-          key: ${{ secrets.STAGING_SSH_KEY }}
-          script: |
-            cd /opt/doctalk
-            export DOCKER_REGISTRY=ghcr.io/${{ github.repository_owner }}
-            export IMAGE_TAG=staging-${{ github.sha }}
-            export POSTGRES_PASSWORD=${{ secrets.STAGING_POSTGRES_PASSWORD }}
-            export JWT_SECRET=${{ secrets.STAGING_JWT_SECRET }}
-            export JWT_REFRESH_SECRET=${{ secrets.STAGING_JWT_REFRESH_SECRET }}
-            export CORS_ORIGINS=${{ secrets.STAGING_CORS_ORIGINS }}
-            export NEXT_PUBLIC_API_URL=${{ secrets.STAGING_API_URL }}
-            export ACME_EMAIL=${{ secrets.ACME_EMAIL }}
-            docker compose -f infrastructure/docker/docker-compose.staging.yml pull
-            docker compose -f infrastructure/docker/docker-compose.staging.yml up -d
-            docker image prune -f
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
 
-      - name: Run integration smoke tests
+      - name: Set up kubectl + kustomize
+        uses: azure/setup-kubectl@v4
+
+      - name: Update image tags in overlay
+        working-directory: infrastructure/k8s/overlays/staging
+        run: |
+          TAG=${{ steps.tag.outputs.tag }}
+          ACR=${{ secrets.ACR_LOGIN_SERVER }}
+
+          kustomize edit set image \
+            doctalk-gateway=$ACR/doctalk-gateway:$TAG \
+            doctalk-auth=$ACR/doctalk-auth:$TAG \
+            doctalk-patients=$ACR/doctalk-patients:$TAG \
+            doctalk-records=$ACR/doctalk-records:$TAG \
+            doctalk-appointments=$ACR/doctalk-appointments:$TAG \
+            doctalk-notifications=$ACR/doctalk-notifications:$TAG \
+            doctalk-web=$ACR/doctalk-web:$TAG
+
+      - name: Apply staging K8s manifests
+        run: kubectl apply -k infrastructure/k8s/overlays/staging
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/api-gateway   -n doctalk --timeout=180s
+          kubectl rollout status deployment/web           -n doctalk --timeout=180s
+          kubectl rollout status deployment/service-auth  -n doctalk --timeout=120s
+
+      - name: Run smoke tests
         run: |
           sleep 20
-          curl -f https://staging.doctalk.ng/health || exit 1
-          curl -f https://api.staging.doctalk.ng/health || exit 1
+          curl -f https://staging.doctalk.ng/health         || exit 1
+          curl -f https://api.staging.doctalk.ng/health     || exit 1
+          echo "Smoke tests passed"
 
-      - name: Tag for potential promotion to prod
-        run: |
-          git tag -f staging-approved-latest
-          git push origin staging-approved-latest --force
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ STAGING deployment failed. [View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
+            }).catch(() => {})

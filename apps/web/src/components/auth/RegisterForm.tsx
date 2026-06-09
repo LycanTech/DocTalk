@@ -17,14 +17,14 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 export function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { register, handleSubmit, watch, formState: { isSubmitting } } = useForm<FormData>();
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm<FormData>();
 
   const onSubmit = async (data: FormData) => {
     setError(null);
     if (data.password !== data.confirmPassword) {
       setError("Passwords do not match"); return;
     }
-    const { confirmPassword: _, ...payload } = data;
+    const { confirmPassword: _confirmPassword, ...payload } = data;
     const res = await fetch(`${API}/api/v1/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

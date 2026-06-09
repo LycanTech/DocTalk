@@ -46,8 +46,8 @@ syncRouter.post("/push", async (req: AuthRequest, res, next) => {
       const { id, ...data } = p;
       await prisma.patient.upsert({
         where: { id },
-        update: { ...data as never, updatedAt: new Date() },
-        create: { id, ...data as never },
+        update: { ...data as any, updatedAt: new Date() },
+        create: { id, ...data as any },
       });
       results.patients++;
     }
@@ -56,8 +56,8 @@ syncRouter.post("/push", async (req: AuthRequest, res, next) => {
       const { id, ...data } = r;
       await prisma.medicalRecord.upsert({
         where: { id },
-        update: { ...data as never, doctorId: req.doctor!.sub, updatedAt: new Date() },
-        create: { id, ...data as never, doctorId: req.doctor!.sub },
+        update: { ...data as any, doctorId: req.doctor!.sub, updatedAt: new Date() },
+        create: { id, ...data as any, doctorId: req.doctor!.sub },
       });
       results.records++;
     }

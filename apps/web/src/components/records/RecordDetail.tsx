@@ -7,7 +7,7 @@ import { FileUpload } from "./FileUpload";
 import type { MedicalRecord, VitalSigns, Prescription } from "@doctalk/shared";
 import { clsx } from "clsx";
 
-interface FullRecord extends MedicalRecord {
+interface FullRecord extends Omit<MedicalRecord, "attachments"> {
   patient: { firstName: string; lastName: string; bloodGroup: string };
   doctor:  { firstName: string; lastName: string; specialty: string; hospital?: string };
   attachments: Array<{ id: string; name: string; mimeType: string; sizeBytes: number }>;

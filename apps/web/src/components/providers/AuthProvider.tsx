@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import type { Doctor } from "@doctalk/shared";
 
@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const PUBLIC_PATHS = ["/login", "/register"];
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4001";
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [doctor, setDoctor] = useState<Doctor | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);

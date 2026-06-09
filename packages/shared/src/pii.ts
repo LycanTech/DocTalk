@@ -5,7 +5,7 @@
 //   DOCTOR → full data (clinical need)
 //   NURSE  → masked PII (see patient but not identify)
 
-export type UserRole = "ADMIN" | "DOCTOR" | "NURSE";
+import { UserRole } from "./types";
 
 /** +2348012345678 → +234*****5678 */
 export function maskPhone(phone: string): string {

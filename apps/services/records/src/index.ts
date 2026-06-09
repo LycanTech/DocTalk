@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { z } from "zod";
 
 const app = express();
@@ -96,9 +96,9 @@ app.post("/records", async (req, res) => {
         doctorId,
         visitDate:    new Date(body.visitDate),
         followUpDate: body.followUpDate ? new Date(body.followUpDate) : undefined,
-        prescription: body.prescription,
-        labResults:   body.labResults,
-      },
+        prescription: body.prescription as Prisma.InputJsonValue,
+        labResults:   body.labResults   as Prisma.InputJsonValue,
+      } as any,
     });
     res.status(201).json({ success: true, data: record });
   } catch (err) {
@@ -118,7 +118,7 @@ app.patch("/records/:id", async (req, res) => {
     const record = await prisma.medicalRecord.update({
       where: { id: req.params.id },
       data:  {
-        ...body,
+        ...body as any,
         ...(body.visitDate    && { visitDate:    new Date(body.visitDate) }),
         ...(body.followUpDate && { followUpDate: new Date(body.followUpDate) }),
       },
