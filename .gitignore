@@ -45,6 +45,12 @@ uploads/
 # Docker
 *.pid
 
+# Kubernetes — secrets contain real credentials, never commit
+infrastructure/k8s/secrets.yaml
+
+# Claude Code
+.claude/
+
 # TypeScript
 *.tsbuildinfo
 

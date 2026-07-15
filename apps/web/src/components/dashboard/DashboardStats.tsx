@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { fetcher } from "@/lib/api";
+import { StaggerContainer, StaggerItem } from "@/components/ui/Motion";
 
 interface Stats { totalPatients: number; todayAppointments: number; pendingRecords: number; syncPending: number; }
 
@@ -17,18 +18,20 @@ export function DashboardStats() {
   const stats = data?.data;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {STAT_CARDS.map(({ key, label, sub, cls }) => (
-        <div key={key} className="stat-card">
-          <p className={`font-mono text-[10px] uppercase tracking-[0.15em] mb-3 ${cls}`}>
-            {sub}
-          </p>
-          <p className="font-serif text-[36px] font-bold text-[var(--text-primary)] leading-none">
-            {stats ? stats[key] : "—"}
-          </p>
-          <p className="font-mono text-[11px] text-[var(--text-muted)] mt-2 uppercase tracking-wider">{label}</p>
-        </div>
+        <StaggerItem key={key}>
+          <div className="stat-card h-full">
+            <p className={`font-mono text-[10px] uppercase tracking-[0.15em] mb-3 ${cls}`}>
+              {sub}
+            </p>
+            <p className="font-serif text-[36px] font-bold text-[var(--text-primary)] leading-none">
+              {stats ? stats[key] : "—"}
+            </p>
+            <p className="font-mono text-[11px] text-[var(--text-muted)] mt-2 uppercase tracking-wider">{label}</p>
+          </div>
+        </StaggerItem>
       ))}
-    </div>
+    </StaggerContainer>
   );
 }

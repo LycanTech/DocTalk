@@ -1,0 +1,76 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: doctalk
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: DocTalk medical records platform — all environments
+
+  # Only deploy from this repository
+  sourceRepos:
+    - https://github.com/LycanTech/DocTalkApp
+
+  # Permitted destination clusters and namespaces
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: doctalk
+    - server: https://kubernetes.default.svc
+      namespace: doctalk-staging
+    - server: https://kubernetes.default.svc
+      namespace: doctalk-prod
+    - server: "*"
+      namespace: doctalk
+    - server: "*"
+      namespace: doctalk-staging
+    - server: "*"
+      namespace: doctalk-prod
+
+  # Cluster-scoped resources this project may manage
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  # Namespace-scoped resources
+  namespaceResourceWhitelist:
+    - group: "apps"
+      kind: Deployment
+    - group: "apps"
+      kind: StatefulSet
+    - group: "autoscaling"
+      kind: HorizontalPodAutoscaler
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ConfigMap
+    - group: "networking.k8s.io"
+      kind: Ingress
+
+  # Roles for this project
+  roles:
+    - name: developer
+      description: Read-only access to all apps in the project
+      policies:
+        - p, proj:doctalk:developer, applications, get, doctalk/*, allow
+      groups:
+        - doctalk-developers
+
+    - name: deployer
+      description: Can sync apps in dev only
+      policies:
+        - p, proj:doctalk:deployer, applications, sync, doctalk/doctalk-dev, allow
+        - p, proj:doctalk:deployer, applications, get, doctalk/*, allow
+      groups:
+        - doctalk-ci
+
+  # Sync windows — production deploys only on weekdays during business hours
+  syncWindows:
+    - kind: allow
+      schedule: "0 8 * * 1-5"
+      duration: 10h
+      applications:
+        - doctalk-prod
+      namespaces:
+        - doctalk-prod
+      manualSync: true

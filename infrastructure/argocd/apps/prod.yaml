@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: doctalk-prod
+  namespace: argocd
+  labels:
+    environment: prod
+    project: doctalk
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: doctalk
+
+  source:
+    repoURL: https://github.com/LycanTech/DocTalkApp
+    targetRevision: main
+    path: infrastructure/helm/doctalk
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+
+  destination:
+    # Replace with your prod cluster API server URL after Terraform apply
+    server: https://kubernetes.default.svc
+    namespace: doctalk-prod
+
+  # Prod: no automated sync — require manual approval
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 2
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

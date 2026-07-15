@@ -1,0 +1,72 @@
+# ApplicationSet — generates a doctalk Application for every environment from one template.
+# Apply this after Argo CD is installed:
+#   kubectl apply -f infrastructure/argocd/applicationset.yaml
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: doctalk
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            branch: dev
+            namespace: doctalk
+            server: https://kubernetes.default.svc
+            valuesFile: values-dev.yaml
+            autoSync: "true"
+
+          - env: staging
+            branch: staging
+            namespace: doctalk-staging
+            server: https://kubernetes.default.svc
+            valuesFile: values-staging.yaml
+            autoSync: "true"
+
+          - env: prod
+            branch: main
+            namespace: doctalk-prod
+            # Replace with the prod cluster API server after Terraform apply
+            server: https://kubernetes.default.svc
+            valuesFile: values-prod.yaml
+            autoSync: "false"
+
+  template:
+    metadata:
+      name: "doctalk-{{env}}"
+      namespace: argocd
+      labels:
+        environment: "{{env}}"
+        project: doctalk
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+
+    spec:
+      project: doctalk
+
+      source:
+        repoURL: https://github.com/LycanTech/DocTalkApp
+        targetRevision: "{{branch}}"
+        path: infrastructure/helm/doctalk
+        helm:
+          valueFiles:
+            - values.yaml
+            - "{{valuesFile}}"
+
+      destination:
+        server: "{{server}}"
+        namespace: "{{namespace}}"
+
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 5m

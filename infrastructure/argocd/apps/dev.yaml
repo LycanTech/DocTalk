@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: doctalk-dev
+  namespace: argocd
+  labels:
+    environment: dev
+    project: doctalk
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: doctalk
+
+  source:
+    repoURL: https://github.com/LycanTech/DocTalkApp
+    targetRevision: dev
+    path: infrastructure/helm/doctalk
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-dev.yaml
+      # Image tags are updated by the CD workflow via argocd app set
+      # or by using the Argo CD image updater
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: doctalk
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+
+  # Health checks — only mark healthy when all pods are ready
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

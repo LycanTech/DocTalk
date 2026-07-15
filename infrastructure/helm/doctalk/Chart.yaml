@@ -1,0 +1,14 @@
+apiVersion: v2
+name: doctalk
+description: DocTalk — offline-first medical records platform for Nigerian doctors
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - healthcare
+  - medical-records
+  - nigeria
+home: https://github.com/LycanTech/DocTalkApp
+maintainers:
+  - name: Chikwe Azinge
+    email: lycandevops@gmail.com

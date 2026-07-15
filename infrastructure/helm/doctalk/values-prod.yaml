@@ -1,0 +1,52 @@
+# Production environment overrides
+namespace: doctalk-prod
+
+api:
+  image:
+    repository: doctalkprodacr.azurecr.io/doctalk-api
+    tag: prod-latest
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  hpa:
+    minReplicas: 3
+    maxReplicas: 10
+
+web:
+  image:
+    repository: doctalkprodacr.azurecr.io/doctalk-web
+    tag: prod-latest
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi
+  hpa:
+    minReplicas: 3
+    maxReplicas: 10
+
+# Prod uses Azure Flexible Server with zone-redundant HA
+postgres:
+  enabled: false
+
+ingress:
+  tls:
+    enabled: true
+    secretName: doctalk-prod-tls
+  hosts:
+    api: api.doctalk.ng
+    web: doctalk.ng
+
+config:
+  nodeEnv: production
+  logLevel: warn
+  corsOrigins: "https://doctalk.ng"
+  nextPublicApiUrl: "https://api.doctalk.ng"

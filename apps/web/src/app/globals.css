@@ -34,9 +34,9 @@
   .dark {
     /* ── Dark editorial ───────────────────────────── */
     --bg-base:         #0C0C0C;
-    --bg-card:         #111111;
+    --bg-card:         rgba(17, 17, 17, 0.75);
     --bg-hover:        #161616;
-    --bg-surface:      #1A1A1A;
+    --bg-surface:      rgba(26, 26, 26, 0.8);
     --text-primary:    #FFFFFF;
     --text-secondary:  #888888;
     --text-muted:      #444444;
@@ -44,7 +44,9 @@
     --accent-hover:    #F06B58;
     --gold:            #C9A84C;
     --separator:       #1E1E1E;
-    --border:          #222222;
+    --border:          rgba(255, 255, 255, 0.07);
+    --glass-border:    rgba(255, 255, 255, 0.09);
+    --glass-bg:        rgba(17, 17, 17, 0.6);
 
     --bg-primary:      var(--bg-card);
     --bg-secondary:    var(--bg-base);
@@ -69,6 +71,15 @@
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
+  /* Gradient mesh — visible in dark mode through glass surfaces */
+  .dark body {
+    background:
+      radial-gradient(ellipse 65% 55% at 85% 0%,   rgba(0, 122, 255, 0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 45% at 5%  95%,  rgba(0, 199, 190, 0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 50% 50%,  rgba(232, 93, 74, 0.03) 0%, transparent 70%),
+      #0C0C0C;
+  }
+
   * { @apply border-[var(--border)]; }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -89,6 +100,8 @@
   /* ── Cards ─────────────────────────────────── */
   .card {
     @apply bg-[var(--bg-card)] border border-[var(--border)] rounded-apple-lg p-4;
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
   }
 
   .card-accent {
@@ -98,12 +111,32 @@
 
   .stat-card {
     @apply card relative overflow-hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
   }
   .stat-card::after {
     content: "";
     @apply absolute bottom-0 left-0 right-0 h-[2px];
     background: linear-gradient(90deg, var(--gold), var(--accent));
+    opacity: 0.8;
   }
+
+  /* ── Glass panel ────────────────────────────── */
+  .glass-panel {
+    background: var(--glass-bg, rgba(17, 17, 17, 0.6));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.09));
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    @apply rounded-apple-lg;
+  }
+
+  /* ── Glow utilities ─────────────────────────── */
+  .glow-accent { box-shadow: 0 0 20px rgba(232, 93, 74, 0.25), 0 0 40px rgba(232, 93, 74, 0.1); }
+  .glow-blue   { box-shadow: 0 0 20px rgba(0, 122, 255, 0.2),  0 0 40px rgba(0, 122, 255, 0.08); }
+  .glow-mint   { box-shadow: 0 0 20px rgba(0, 199, 190, 0.2),  0 0 40px rgba(0, 199, 190, 0.08); }
 
   /* ── Buttons ────────────────────────────────── */
   .btn-primary {
@@ -186,7 +219,12 @@
   }
 
   /* ── Sidebar ────────────────────────────────── */
-  .sidebar { background-color: #0A0A0A; border-right: 1px solid #1A1A1A; }
+  .sidebar {
+    background: rgba(8, 8, 8, 0.75);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+  }
 
   .sidebar-nav-active {
     @apply text-white;

@@ -1,0 +1,34 @@
+# Staging environment overrides
+namespace: doctalk-staging
+
+api:
+  image:
+    tag: staging-latest
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 150m
+      memory: 192Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi
+
+web:
+  image:
+    tag: staging-latest
+  replicaCount: 2
+
+# Staging uses Azure Flexible Server — disable in-cluster Postgres
+postgres:
+  enabled: false
+
+ingress:
+  hosts:
+    api: api.staging.doctalk.ng
+    web: staging.doctalk.ng
+
+config:
+  nodeEnv: production
+  logLevel: info
+  corsOrigins: "https://staging.doctalk.ng"
+  nextPublicApiUrl: "https://api.staging.doctalk.ng"

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: doctalk-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "doctalk.labels" . | nindent 4 }}
+data:
+  NODE_ENV:              {{ .Values.config.nodeEnv | quote }}
+  LOG_LEVEL:             {{ .Values.config.logLevel | quote }}
+  CORS_ORIGINS:          {{ .Values.config.corsOrigins | quote }}
+  NEXT_PUBLIC_API_URL:   {{ .Values.config.nextPublicApiUrl | quote }}
+  PORT:                  {{ .Values.config.apiPort | quote }}

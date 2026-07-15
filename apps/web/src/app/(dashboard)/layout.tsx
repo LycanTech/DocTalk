@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { VerificationBanner } from "@/components/verification/VerificationBanner";
+import { PageTransition } from "@/components/layout/PageTransition";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <VerificationBanner />
         <TopBar />
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
     </div>

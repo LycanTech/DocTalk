@@ -1,0 +1,116 @@
+# Default values — override per environment with values-<env>.yaml
+
+nameOverride: ""
+fullnameOverride: ""
+
+namespace: doctalk
+
+# ── API ────────────────────────────────────────────────────────────────────────
+api:
+  image:
+    repository: doctalkacr.azurecr.io/doctalk-api
+    tag: latest
+    pullPolicy: Always
+  replicaCount: 2
+  port: 4000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    cpuUtilization: 70
+    memoryUtilization: 80
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    failureThreshold: 3
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    failureThreshold: 3
+
+# ── Web ────────────────────────────────────────────────────────────────────────
+web:
+  image:
+    repository: doctalkacr.azurecr.io/doctalk-web
+    tag: latest
+    pullPolicy: Always
+  replicaCount: 2
+  port: 3000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    cpuUtilization: 70
+    memoryUtilization: 80
+  livenessProbe:
+    path: /
+    initialDelaySeconds: 20
+    periodSeconds: 15
+    failureThreshold: 3
+  readinessProbe:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    failureThreshold: 3
+
+# ── In-cluster PostgreSQL ──────────────────────────────────────────────────────
+# Disable in staging/prod and set externalDatabaseUrl in secrets
+postgres:
+  enabled: true
+  image: postgres:16-alpine
+  storage: 10Gi
+  storageClass: managed-csi
+  port: 5432
+  database: doctalk
+  user: doctalk
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# ── Ingress ────────────────────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: webapprouting.kubernetes.azure.com
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+  hosts:
+    api: api.doctalk.ng
+    web: doctalk.ng
+  tls:
+    enabled: false
+    # secretName: doctalk-tls  # uncomment when cert-manager is in place
+
+# ── Non-sensitive config (ConfigMap) ──────────────────────────────────────────
+config:
+  nodeEnv: production
+  logLevel: info
+  corsOrigins: "https://doctalk.ng"
+  nextPublicApiUrl: "https://api.doctalk.ng"
+  apiPort: "4000"
+
+# ── Secrets (never put real values here — inject via Argo CD + Vault or kubectl)
+# The chart references a Secret named doctalk-secrets which must exist in the namespace.
+# Required keys: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, POSTGRES_PASSWORD
+secrets:
+  secretName: doctalk-secrets
