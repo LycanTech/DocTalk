@@ -1,9 +1,7 @@
 name: Scheduled — Appointment Reminders
 
 on:
-  schedule:
-    - cron: "0 18 * * *"   # 6 PM UTC daily (7 PM WAT)
-  workflow_dispatch:         # Manual trigger for testing
+  workflow_dispatch:         # Manual trigger only — schedule disabled
 
 jobs:
   send-reminders:
